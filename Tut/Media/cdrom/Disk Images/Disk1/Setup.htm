@@ -1,0 +1,180 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+
+<!------------------------------------------------------------------>
+<!--                                                              -->
+<!-- InternetMediaTemplate.htm - sample page for                  -->
+<!--                             One-Click Install trigger        -->
+<!--                                                              -->
+<!-- Copyright © 2001-2002 InstallShield Software Corporation     -->
+<!--                                                              -->
+
+<title>InstallShield One-Click&trade; Install</title>
+<meta http-equiv="Content-Type" content="text/html;"/>
+<meta name="vs_targetSchema" content="http://schemas.microsoft.com/intellisense/nav4-0">
+<meta http-equiv="X-UA-Compatible" content="requiresActiveX=true"/>
+<link href="_Graphics/Style.css" rel="stylesheet" type="text/css"/>
+<script language="JavaScript" src="_Graphics/Utilities.js"></script>
+</head>
+<body onload="StartUp();">
+
+<map name="Help">
+    <area href="http://support.installshield.com/help/oneclick/defaulthelp.htm" target="_blank" coords="470, 65, 535, 90" shape="rect">
+</map>
+
+<table border="0" cellpadding="0" cellspacing="0" style="width: 100%; height: 120px; background-image: url(_Graphics/OCI_Slice.jpg); background-repeat: repeat-x;">
+    <tr>
+        <td style="width: 639px;"><img src="_Graphics/oci_header.jpg" width="639" height="120" border="0" usemap="#Help"></td>
+        <td>&nbsp;</td>
+    </tr>
+</table>
+
+<center>
+<table border="0" cellpadding="10" cellspacing="0" style="width: 60%; background-color: #EDF1F4; margin-top: 1em;">
+    <tr>
+        <td class="upperleft">
+            <span style="color: #002B55; font-size: medium;">Tut App Installation</span>
+        </td>
+        <td class="upperright" style="width: 142px;"><a href="javascript:startInstall()"><img name="imgOCI" src="_Graphics/PleaseWait.gif" width="142" height="25" border="0"></a></td>
+    </tr>
+    <tr>
+        <td colspan="2"><hr noshade></td>
+    </tr>
+    <tr>
+        <td>
+            <p style="color: #002B55;">
+            Download size: <b><span id="txtSize">4.4 MB</span></b>
+            <br>
+            Estimated <b><span id="txtModemTime">12 minutes</span></b> over a dial-up connection
+            <br>
+            Estimated <b><span id="txtBroadbandTime">1 minutes</span></b> over a broadband connection
+            </p>
+        </td>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td class="lowerleft">
+            <p style="margin-top: 3em;">
+            <span id="txtMsg">Please wait for the page to load...</span>
+            </p>
+        </td>
+        <td class="lowerright">&nbsp;</td>
+    </tr>
+</table>
+</center>
+
+<!-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
+<!-- Installs and Invokes the Setup Player -->
+<!-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -->
+
+<object id="playerIE" align="baseline" height="1" width="1" classid="CLSID:BAD2DF0F-FCDA-4840-A680-DFD0E6D7111B" codebase="setup.ocx#Version=24,0,0,573" VIEWASTEXT></object>
+
+<script language="JavaScript" type="text/javascript">
+<!--
+//global variables
+var brw, player, ether, intDldSizeKB;
+var intervalID = 0;
+brw = chkBrowser();
+
+// Error Constants
+var ERR_HTTP_VER = -2147185689;
+var ERR_APPLET_TAG = -2147185688;
+var ERR_OBJECT_TAG = -2147185687; 
+var ERR_CONTROL_LOAD = -2147185686;
+var ERR_APPLET_PERMISSIONS = -2147186688;
+
+/* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
+/* This function is inititated by the onload attribute in    */
+/* the body tag.  It triggers the appropriate course of      */
+/* action based on the browser detected.                     */
+/* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
+function StartUp() {
+    writeText("txtMsg", "Please wait for the page to load...");
+	    
+    if (brw == 'ie4up') {
+        if (!document.all['playerIE'])  {
+            iHelp("document", "object", ERR_OBJECT_TAG);
+            return;
+        }
+        player = new ActiveXObject("InstallShield.OCISetupPlayerOCX24");
+    }
+    else if (brw == 'needOS') {
+                alert('To run this installation you must have Windows 2000 or later.');
+                return;
+    }
+    else if (brw == 'needBrwsr') {
+                alert('To run this installation you must be using Microsoft Internet Explorer 4.0 or later browsers.');
+                return;
+    }
+    
+    scriptPlayer();
+}
+
+/* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
+/* The following 2 functions are the main functions */
+/*  to open a media and start an install.           */
+/* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% */
+
+function startInstall() {
+    if (ether)
+    {
+        ether.Play();
+        if (intervalID == 0)
+            intervalID = window.setInterval("IsSetupFinished()", 3000);
+    }
+}
+
+function scriptPlayer() {
+    // Catch player initialization error 
+    if ((!player) || (typeof(player.LastError) != "number")) {
+        iHelp("player","init", ERR_CONTROL_LOAD);
+        return;
+    }
+    else {
+        if (player.LastError != 0) {
+            iHelp("player","init", player.LastError);
+            return;
+        }
+    }
+    
+    // URL from address bar     
+    var strSetupURL = getSetupURL(); 
+
+    // Open the installation
+    ether = player.Open(strSetupURL);
+
+    // Catch player open error 
+    if (!ether) {
+        iHelp("player", "open", player.LastError);
+        return;
+    }
+
+    //Set command line
+    ether.SetProperty( "is::CmdLine", "" );
+
+    // Ready to install
+    writeText("txtMsg", "Click <a href='javascript:startInstall()'>Install</a> to <b>start</b> this installation now.  You will be prompted when the InstallShield Wizard starts.");
+    document.images["imgOCI"].src = "_Graphics/Install.gif";
+}
+
+function IsSetupFinished()
+{
+    var nResult = ether.GetLastError();
+    if (nResult != 0)
+    {
+        if (nResult == SETUP_FINISHED) // Installation has completed successfully
+            /* to do */ ;
+        if (nResult == SETUP_ERR_CANCELLED) // Installation was cancelled
+            /* to do */ ;
+
+        // look in _graphics\utilities.js for more error codes
+
+        window.clearInterval(intervalID);
+        intervalID = 0;
+    }
+}
+//-->
+</script>
+</body>
+</html> 
